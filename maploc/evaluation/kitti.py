@@ -19,7 +19,7 @@ default_cfg_sequential = OmegaConf.create(
         "data": {
             "mask_radius": KittiDataModule.default_cfg["max_init_error"],
             "prior_range_rotation": KittiDataModule.default_cfg[
-                "max_init_error_rotation"
+                "max_init_error_rotation_eval"
             ]
             + 1,
             "max_init_error": 0,

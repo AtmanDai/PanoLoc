@@ -1,7 +1,7 @@
 name: kitti
 loading:
   train:
-    batch_size: 9
+    batch_size: 8
     num_workers: ${.batch_size}
   val:
     batch_size: ${..train.batch_size}

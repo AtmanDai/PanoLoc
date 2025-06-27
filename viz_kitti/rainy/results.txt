@@ -1,0 +1,5 @@
+0 10.38 {'xy_max_error': np.float32(6.22), 'yaw_max_error': np.float32(15.15), 'directional_error': array([6.14, 0.99], dtype=float32)}
+1 6.71 {'xy_max_error': np.float32(1.59), 'yaw_max_error': np.float32(2.0), 'directional_error': array([1.07, 1.17], dtype=float32)}
+2 inf {'xy_max_error': np.float32(23.46), 'yaw_max_error': np.float32(2.4), 'directional_error': array([ 0.18, 23.45], dtype=float32)}
+3 12.62 {'xy_max_error': np.float32(42.97), 'yaw_max_error': np.float32(3.42), 'directional_error': array([ 2.35, 42.9 ], dtype=float32)}
+4 18.35 {'xy_max_error': np.float32(26.11), 'yaw_max_error': np.float32(1.43), 'directional_error': array([22.37, 13.46], dtype=float32)}

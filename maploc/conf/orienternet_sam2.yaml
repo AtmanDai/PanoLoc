@@ -1,0 +1,7 @@
+defaults:
+  - data: mapillary
+  - override /model: orienternet
+  - override /training: training
+  - _self_
+model:
+  name: orienternet_sam2

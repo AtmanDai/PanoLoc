@@ -26,7 +26,7 @@ model:
       num_downsample: 3
       decoder: [128, 64, 64]
       padding: replicate
-    unary_prior: false
+    unary_prior: true
   bev_net:
     num_blocks: 4
     latent_dim: ${..latent_dim}

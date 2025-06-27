@@ -101,6 +101,26 @@ def prepare_experiment_dir(experiment_dir, cfg, rank):
             OmegaConf.save(cfg, fp)
     return last_checkpoint_path
 
+def register_batch_size_resolvers():
+  """注册OmegaConf的数学计算resolvers"""
+  
+  # 注册乘法resolver
+  def multiply(a, b):
+      return int(a) * int(b)
+  
+  # 注册eval resolver（支持复杂表达式）
+  def eval_expr(expr):
+      # 安全的数学表达式评估
+      import re
+      # 只允许数字、空格、基本运算符
+      if re.match(r'^[\d\s\+\-\*/\(\)\.]+$', expr):
+          return eval(expr)
+      else:
+          raise ValueError(f"Unstable Expression: {expr}")
+  
+  # 注册resolver
+  OmegaConf.register_new_resolver("multiply", multiply)
+  OmegaConf.register_new_resolver("eval", eval_expr)
 
 def train(cfg: DictConfig, job_id: Optional[int] = None):
     torch.set_float32_matmul_precision("medium")
@@ -148,9 +168,9 @@ def train(cfg: DictConfig, job_id: Optional[int] = None):
     )
     checkpointing_step.CHECKPOINT_NAME_LAST = "last-step"
 
-    strategy = None
+    strategy = "auto"
     if cfg.experiment.gpus > 1:
-        strategy = pl.strategies.DDPStrategy(find_unused_parameters=False)
+        strategy = pl.strategies.DDPStrategy(find_unused_parameters=True)
         for split in ["train", "val"]:
             cfg.data["loading"][split].batch_size = (
                 cfg.data["loading"][split].batch_size // cfg.experiment.gpus
@@ -177,9 +197,9 @@ def train(cfg: DictConfig, job_id: Optional[int] = None):
 
     trainer = pl.Trainer(
         default_root_dir=experiment_dir,
-        detect_anomaly=False,
         enable_model_summary=False,
         sync_batchnorm=True,
+        detect_anomaly=False,
         enable_checkpointing=True,
         logger=tb,
         callbacks=callbacks,
@@ -187,15 +207,17 @@ def train(cfg: DictConfig, job_id: Optional[int] = None):
         check_val_every_n_epoch=1,
         accelerator="gpu",
         num_nodes=1,
+        use_distributed_sampler=False,
         **cfg.training.trainer,
     )
     trainer.fit(model, data, ckpt_path=last_checkpoint_path)
 
 
 @hydra.main(
-    config_path=osp.join(osp.dirname(__file__), "conf"), config_name="orienternet"
+    config_path=osp.join(osp.dirname(__file__), "conf"), config_name="contrastive_train"
 )
 def main(cfg: DictConfig) -> None:
+    register_batch_size_resolvers()
     train(cfg)
 
 
