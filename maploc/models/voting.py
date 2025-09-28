@@ -134,7 +134,7 @@ def sample_xyr(volume, xy_grid, angle_grid, nearest_for_inf=False):
     xy_norm = xy_grid / (size - 1)  # align_corners=True
     angle_norm = (angle_grid / 360) % 1
     grid = torch.concat([angle_norm.unsqueeze(-1), xy_norm], -1)
-    grid_norm = grid * 2 - 1
+    grid_norm = grid * 2 - 1 # Normalize to [-1, 1]
 
     valid = torch.all((grid_norm >= -1) & (grid_norm <= 1), -1)
     value = grid_sample(volume_padded, grid_norm, align_corners=True, mode="bilinear")

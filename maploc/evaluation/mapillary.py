@@ -14,19 +14,16 @@ from .run import evaluate
 split_overrides = {
     "val": {
         "scenes": [
-            "sanfrancisco_soma",
-            "sanfrancisco_hayes",
-            "amsterdam",
-            "berlin",
-            "lemans",
-            "montrouge",
-            "toulouse",
-            "nantes",
-            "vilnius",
-            "avignon",
-            "helsinki",
-            "milan",
-            "paris",
+        "antwerp",
+        "berlin",
+        "brussels",
+        "hoboken",
+        "los_angeles",
+        "milan",
+        "paris",
+        "sanfrancisco",
+        "tokyo",
+        "washington",
         ],
     },
 }
@@ -37,7 +34,7 @@ data_cfg = OmegaConf.merge(
         "return_gps": True,
         "add_map_mask": True,
         "max_init_error": 32,
-        "loading": {"val": {"batch_size": 1, "num_workers": 0}},
+        "loading": {"val": {"batch_size": 6, "num_workers": 6}},
     },
 )
 default_cfg_single = OmegaConf.create({"data": data_cfg})

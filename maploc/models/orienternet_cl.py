@@ -24,7 +24,7 @@ from .voting import (
 )
 
 
-class OrienterNet(BaseModel):
+class OrienterNet_CL(BaseModel):
     default_conf = {
         "image_encoder": "???",
         "map_encoder": "???",
@@ -52,7 +52,6 @@ class OrienterNet(BaseModel):
         "normalize_scores_by_num_valid": True,
         "prior_renorm": True,
         "retrieval_dim": None,
-        "num_positives": 7,
         "contrastive_loss_weight": 0.0,
         "contrastive_temperature": 0.1,
         "embedding_monitor_interval": 50,
@@ -147,16 +146,9 @@ class OrienterNet(BaseModel):
         f_map = pred_map["map_features"][0]
 
         # The first B samples in the batch are the anchors.
-        # batch_size = data['camera'].f.shape[0]
-        num_anchors = data['num_anchors']
-        positives_per_anchor = data['positives_per_anchor']
-        if self.conf.num_positives == data['num_positives']:
-            num_positives = data['num_positives']
-        else:
-            raise ValueError(
-                f"Number of positives mismatch: config={self.conf.num_positives}, "
-                f"batch={data['num_positives']}"
-            )
+        num_anchors = data['camera'].f.shape[0]
+        # num_anchors = data['num_anchors']
+
 
         # 1. ENCODE ALL IMAGES (ANCHORS + POSITIVES)
         # data['image'] is a stacked tensor of [Anchors, Positives_1, Positives_2, ...]
@@ -218,13 +210,15 @@ class OrienterNet(BaseModel):
         # Then, if in training, compute and add the contrastive loss
         global_descriptors = all_image_feats.get("global_descriptor")
         if self.training and global_descriptors is not None:
+            positives_per_anchor = data['positives_per_anchor']
+            num_positives = data['num_positives']            
             anchor_embeddings = global_descriptors[:num_anchors]
-            positive_embeddings_flat = global_descriptors[num_anchors:num_anchors + num_positives]
+            positive_embeddings_flat = global_descriptors[num_anchors: num_anchors+ num_positives]
             embed_dim = positive_embeddings_flat.shape[1]
             positive_embeddings = positive_embeddings_flat.view(
                 num_anchors, positives_per_anchor, embed_dim)
             
-            contrastive_loss = multi_positive_infonce_loss(
+            contrastive_loss = multi_positive_infonce_loss_vectorized(
                 anchor_embeddings,
                 positive_embeddings,
                 temperature=self.conf.contrastive_temperature)
@@ -232,7 +226,7 @@ class OrienterNet(BaseModel):
             weighted_contrastive = contrastive_loss * self.conf.contrastive_loss_weight
             pred['losses']['contrastive_loss'] = weighted_contrastive
             # Add to the 'total' loss for optimization
-            pred['losses']['total'] += weighted_contrastive
+            pred['losses']['total'] = pred['losses']['contrastive_loss'] + pred['losses']['nll']
         else:
             warnings.warn(
                 "contrastive_loss_weight > 0 but 'global_descriptor' not found."
@@ -272,65 +266,4 @@ class OrienterNet(BaseModel):
             "yaw_recall_5°": AngleRecall(5.0, "yaw_max"),
         }
 
-    # Original forward method:
-    '''
-    def _forward(self, data):
-        pred = {}
-        pred_map = pred["map"] = self.map_encoder(data)
-        f_map = pred_map["map_features"][0]
-
-        # Extract image features.
-        level = 0
-        f_image = self.image_encoder(data)["feature_maps"][level]
-        camera = data["camera"].scale(1 / self.image_encoder.scales[level])
-        camera = camera.to(data["image"].device, non_blocking=True)
-
-        # Estimate the monocular priors.
-        pred["pixel_scales"] = scales = self.scale_classifier(f_image.moveaxis(1, -1))
-        f_polar = self.projection_polar(f_image, scales, camera)
-
-        # Map to the BEV.
-        with torch.autocast("cuda", enabled=False):
-            f_bev, valid_bev, _ = self.projection_bev(
-                f_polar.float(), None, camera.float()
-            )
-        pred_bev = {}
-        if self.conf.bev_net is None:
-            # channel last -> classifier -> channel first
-            f_bev = self.feature_projection(f_bev.moveaxis(1, -1)).moveaxis(-1, 1)
-        else:
-            pred_bev = pred["bev"] = self.bev_net({"input": f_bev})
-            f_bev = pred_bev["output"]
-
-        scores = self.exhaustive_voting(
-            f_bev, f_map, valid_bev, pred_bev.get("confidence")
-        )
-        scores = scores.moveaxis(1, -1)  # B,H,W,N
-        if "log_prior" in pred_map and self.conf.apply_map_prior:
-            scores = scores + pred_map["log_prior"][0].unsqueeze(-1)
-        # pred["scores_unmasked"] = scores.clone()
-        if "map_mask" in data:
-            scores.masked_fill_(~data["map_mask"][..., None], -np.inf)
-        if "yaw_prior" in data:
-            mask_yaw_prior(scores, data["yaw_prior"], self.conf.num_rotations)
-        log_probs = log_softmax_spatial(scores)
-        with torch.no_grad():
-            uvr_max = argmax_xyr(scores).to(scores)
-            uvr_avg, _ = expectation_xyr(log_probs.exp())
-
-        return {
-            **pred,
-            "scores": scores,
-            "log_probs": log_probs,
-            "uvr_max": uvr_max,
-            "uv_max": uvr_max[..., :2],
-            "yaw_max": uvr_max[..., 2],
-            "uvr_expectation": uvr_avg,
-            "uv_expectation": uvr_avg[..., :2],
-            "yaw_expectation": uvr_avg[..., 2],
-            "features_image": f_image,
-            "features_bev": f_bev,
-            "valid_bev": valid_bev.squeeze(1),
-        }
-    '''    
 

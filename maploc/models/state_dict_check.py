@@ -5,6 +5,7 @@ from omegaconf import OmegaConf
 import os
 
 from maploc.models.orienternet_sam2 import OrienterNetWithSAM2Encoder
+from maploc.models.orienternet_cl import OrienterNet_CL
 from maploc.module import GenericModule
 
 from hydra import compose, initialize
@@ -13,6 +14,9 @@ from hydra.utils import instantiate
 def main():
     onet_sam2_ckpt_path = "/hkfs/work/workspace/scratch/tj3409-rdaionet/OrienterNet/experiments/OrienterNet_SAM2_KITTI_mix/checkpoint-epoch=04.ckpt"
     onet_sam2 = torch.load(onet_sam2_ckpt_path, map_location="cpu", weights_only=False)
+
+    onet_cl_ckpt_path = "/hkfs/work/workspace/scratch/tj3409-rdaionet/OrienterNet/experiments/OrienterNet_KITTI_CL1/checkpoint-step=20000.ckpt"
+    onet_cl = torch.load(onet_cl_ckpt_path, map_location="cpu", weights_only=False)
 
     onet_ckpt_path = "/hkfs/work/workspace/scratch/tj3409-rdaionet/OrienterNet/experiments/orienternet_mgl.ckpt"
     onet = torch.load(onet_ckpt_path, map_location="cpu", weights_only=False)
@@ -39,6 +43,16 @@ def main():
           f.write(f"Key:{key}\n")
       else:
         f.write("No state dict found in onet_sam2")
+      
+      f.write("="*80+"\n\n")
+
+      f.write(f"Available keys in onet_cl checkpoint: {list(onet_cl.keys())}\n\n")
+      if "state_dict" in list(onet_cl.keys()):
+        f.write("Available keys in onet_cl state dict:\n\n")
+        for key, value in onet_cl["state_dict"].items():
+          f.write(f"Key:{key}\n")
+      else:
+        f.write("No state dict found in onet_cl")
 
 
 if __name__ == '__main__':

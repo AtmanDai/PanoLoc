@@ -1,8 +1,10 @@
 defaults:
-  - orienternet # Inherit defaults from the base orienternet.yaml
+  - orienternet_cl # Inherit defaults from the base orienternet_cl.yaml
   - _self_
 experiment:
-  base_batch_size: 2
+  base_batch_size: 8
+training:
+  finetune_from_checkpoint: null
 data:
   name: kitti_contrastive
   sampler:
@@ -11,7 +13,7 @@ data:
   loading:
     train:
       batch_size: ${eval:'${experiment.base_batch_size} * ${experiment.gpus}'}
-      num_workers: 12
+      num_workers: 16
     val:
       batch_size: 4
       num_workers: ${..train.num_workers}
@@ -40,20 +42,18 @@ data:
       name: kitti_under
 
 model:
-  embedding_monitor_interval: 50
-  contrastive_loss_weight: 1.0
-  contrastive_temperature: 0.1
-  num_positives: ${eval:'${experiment.base_batch_size} * 7'}
+  embedding_monitor_interval: 500
+  contrastive_loss_weight: 8
+  contrastive_temperature: 0.4
   image_encoder:
     backbone: 
       encoder: resnet101
     global_descriptor:
       dim: 256
-      type: improved
+      type: simclr
       hidden_dim: 512
       num_layers: 2
       dropout: 0.1
       use_bn: true
       pooling: gem
       gem_p: 3.0
-      debug_mode: true  

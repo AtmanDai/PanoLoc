@@ -89,3 +89,31 @@ class CartesianProjection(torch.nn.Module):
         grid_uz = self.grid_to_polar(cam)
         image, valid = self.sample_from_polar(image_polar, valid_polar, grid_uz)
         return image, valid, grid_uz
+
+def make_pano_grid(z_max, ppm):
+    Δ = 1 / ppm
+    
+    grid_xz_pano = make_grid(
+        w=z_max * 2 + Δ,
+        h=z_max * 2 + Δ,
+        step_y=Δ,
+        step_x=Δ,
+        orig_y=-z_max,
+        orig_x=-z_max,
+        y_up=True
+    )
+    return grid_xz_pano
+
+def make_oval_pano_grid(z_max, x_max, ppm):
+    Δ = 1 / ppm
+    
+    grid_xz_pano = make_grid(
+        w=x_max * 2 + Δ,
+        h=z_max * 2 + Δ,
+        step_y=Δ,
+        step_x=Δ,
+        orig_y=-z_max,
+        orig_x=-x_max,
+        y_up=True
+    )
+    return grid_xz_pano

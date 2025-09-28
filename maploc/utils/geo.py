@@ -66,9 +66,10 @@ class BoundaryBox:
             raise TypeError(f"Cannot add {self.__class__.__name__} to {type(x)}.")
 
     def __and__(self, other):
-        return self.__class__(
-            np.maximum(self.min_, other.min_), np.minimum(self.max_, other.max_)
-        )
+        min_ = np.maximum(self.min_, other.min_)
+        max_ = np.minimum(self.max_, other.max_)
+        max_ = np.maximum(min_, max_)  # handle non-overlapping boxes
+        return self.__class__(min_, max_)
 
     def __repr__(self):
         return self.format()
@@ -103,12 +104,17 @@ class Projection:
             return BoundaryBox(*self.project(np.stack([geo.min_, geo.max_])))
         geo = np.asarray(geo)
         assert geo.shape[-1] in (2, 3)
+        # The querz bbox could be an narrow actangle, in which the distance
+        # between points on the diagonal line and the center could be larger
+        # than the max_extent, yet they are still valid. 
+        '''
         if self.bounds is not None:
             if not np.all(self.bounds.contains(geo[..., :2])):
                 raise ValueError(
                     f"Points {geo} are out of the valid bounds "
                     f"{self.bounds.format()}."
                 )
+        '''
         lat, lon = geo[..., 0], geo[..., 1]
         if geo.shape[-1] == 3:
             alt = geo[..., -1]

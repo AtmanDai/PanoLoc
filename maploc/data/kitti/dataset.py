@@ -141,9 +141,6 @@ class KittiContrastiveDataModule(pl.LightningDataModule):
                 positions=positions,
                 min_distance=self.cfg.sampler.min_distance
             )
-            print(f"🔍 Train batch_size: {self.cfg.loading.train.batch_size}")
-            print(f"🔍 Dataset length: {len(self.train_dataset)}")
-
             return torchdata.DataLoader(
                 self.train_dataset,
                 batch_sampler=batch_sampler, # Pass the fully constructed batch sampler
@@ -151,7 +148,6 @@ class KittiContrastiveDataModule(pl.LightningDataModule):
                 pin_memory=True,
                 worker_init_fn=worker_init_fn,
                 collate_fn=contrastive_collate_fn)
-            
 
         else:
             # Default behavior without the custom sampler

@@ -1,5 +1,5 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-
+import os
 import os.path as osp
 from pathlib import Path
 from typing import Optional
@@ -102,13 +102,11 @@ def prepare_experiment_dir(experiment_dir, cfg, rank):
     return last_checkpoint_path
 
 def register_batch_size_resolvers():
-  """注册OmegaConf的数学计算resolvers"""
   
-  # 注册乘法resolver
+  # multiple resolver
   def multiply(a, b):
       return int(a) * int(b)
   
-  # 注册eval resolver（支持复杂表达式）
   def eval_expr(expr):
       # 安全的数学表达式评估
       import re
@@ -118,7 +116,7 @@ def register_batch_size_resolvers():
       else:
           raise ValueError(f"Unstable Expression: {expr}")
   
-  # 注册resolver
+
   OmegaConf.register_new_resolver("multiply", multiply)
   OmegaConf.register_new_resolver("eval", eval_expr)
 
@@ -140,7 +138,7 @@ def train(cfg: DictConfig, job_id: Optional[int] = None):
     if init_checkpoint_path is not None:
         logger.info("Initializing the model from checkpoint %s.", init_checkpoint_path)
         model = GenericModule.load_from_checkpoint(
-            Path(init_checkpoint_path), strict=True, find_best=False, cfg=cfg
+            Path(init_checkpoint_path), strict=False, find_best=False, cfg=cfg
         )
     else:
         model = GenericModule(cfg)
@@ -171,6 +169,7 @@ def train(cfg: DictConfig, job_id: Optional[int] = None):
     strategy = "auto"
     if cfg.experiment.gpus > 1:
         strategy = pl.strategies.DDPStrategy(find_unused_parameters=True)
+        # strategy = "ddp"
         for split in ["train", "val"]:
             cfg.data["loading"][split].batch_size = (
                 cfg.data["loading"][split].batch_size // cfg.experiment.gpus
@@ -195,6 +194,8 @@ def train(cfg: DictConfig, job_id: Optional[int] = None):
     if cfg.experiment.gpus > 0:
         callbacks.append(pl.callbacks.DeviceStatsMonitor())
 
+    num_nodes = int(os.environ.get("SLURM_NNODES", 1))
+
     trainer = pl.Trainer(
         default_root_dir=experiment_dir,
         enable_model_summary=False,
@@ -206,7 +207,7 @@ def train(cfg: DictConfig, job_id: Optional[int] = None):
         strategy=strategy,
         check_val_every_n_epoch=1,
         accelerator="gpu",
-        num_nodes=1,
+        num_nodes=num_nodes,
         use_distributed_sampler=False,
         **cfg.training.trainer,
     )
@@ -214,7 +215,7 @@ def train(cfg: DictConfig, job_id: Optional[int] = None):
 
 
 @hydra.main(
-    config_path=osp.join(osp.dirname(__file__), "conf"), config_name="contrastive_train"
+    config_path=osp.join(osp.dirname(__file__), "conf"), config_name="orienternet"
 )
 def main(cfg: DictConfig) -> None:
     register_batch_size_resolvers()

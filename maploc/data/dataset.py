@@ -89,6 +89,11 @@ class MapLocDataset(torchdata.Dataset):
         return len(self.names)
 
     def __getitem__(self, idx):
+        if hasattr(idx, "item"):
+            idx = idx.item()
+        elif not isinstance(idx, int):
+            idx = int(idx)
+
         if self.stage == "train" and self.cfg.random:
             seed = None
         else:

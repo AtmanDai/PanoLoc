@@ -12,10 +12,30 @@ from .kitti.dataset import (
 )
     
 
-from .mapillary.dataset import MapillaryDataModule
+from .mapillary.dataset import (
+    MapillaryDataModule,
+    MapillaryPanoDataModule,
+    Mapillary2KValDataModule,
+    MapillaryRainyDataModule,
+    MapillarySnowyDataModule,
+    MapillaryNightDataModule,
+    MapillaryFoggyDataModule,
+    MapillaryOverExposureDataModule,
+    MapillaryUnderExposureDataModule,
+    MapillaryMotionBlurDataModule,
+) 
 
 modules = {
-    "mapillary": MapillaryDataModule, 
+    "mapillary": MapillaryDataModule,
+    "mapillary_pano": MapillaryPanoDataModule,
+    "mapillary_2kval": Mapillary2KValDataModule,
+    "mapillary_rainy": MapillaryRainyDataModule,
+    "mapillary_snowy": MapillarySnowyDataModule,
+    "mapillary_night": MapillaryNightDataModule,
+    "mapillary_foggy": MapillaryFoggyDataModule,
+    "mapillary_over_exposure": MapillaryOverExposureDataModule,
+    "mapillary_under_exposure": MapillaryUnderExposureDataModule,
+    "mapillary_motion_blur": MapillaryMotionBlurDataModule, 
     "kitti": KittiDataModule,
     "kitti_mix": KittiMixDataModule,
     "kitti_contrastive": KittiContrastiveDataModule, 

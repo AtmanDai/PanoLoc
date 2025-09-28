@@ -16,18 +16,6 @@ import torchvision
 from .base import BaseModel
 from .utils import checkpointed
 
-class GeMPooling(nn.Module):
-    """Generalized Mean Pooling, used for creating global descriptors."""
-    def __init__(self, p=3, eps=1e-6):
-        super().__init__()
-        self.p = nn.Parameter(torch.ones(1) * p)
-        self.eps = eps
-
-    def forward(self, x):
-        return nn.functional.avg_pool2d(
-            x.clamp(min=self.eps).pow(self.p),
-            (x.size(-2), x.size(-1))
-        ).pow(1./self.p)
 
 class DecoderBlock(nn.Module):
     def __init__(
@@ -88,7 +76,6 @@ class FeatureExtractor(BaseModel):
         "do_average_pooling": False,
         "checkpointed": False,  # whether to use gradient checkpointing
         "padding": "zeros",
-        "global_descriptor": None,
     }
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]
@@ -211,17 +198,6 @@ class FeatureExtractor(BaseModel):
         self.adaptation = nn.ModuleList(adaptation)
         self.scales = [2**s for s in conf.output_scales]
 
-        # Create the global descriptor (projection head) if configured
-        self.global_descriptor_head = None
-        if conf.global_descriptor is not None:
-            # The input to the head is the output of the encoder's last stage
-            last_layer_channels = self.skip_dims[-1]
-            self.global_descriptor_head = nn.Sequential(
-                GeMPooling(),
-                nn.Flatten(),
-                nn.Linear(last_layer_channels, conf.global_descriptor.dim),
-            )
-
     def _forward(self, data):
         image = data["image"]
         if self.conf.pretrained:
@@ -233,14 +209,6 @@ class FeatureExtractor(BaseModel):
         for block in self.encoder:
             features = block(features)
             skip_features.append(features)
-
-        # Compute the global descriptor from the last encoder feature map
-        out = {}
-        if self.global_descriptor_head is not None:
-            # The last feature map from the encoder is used for pooling
-            last_encoder_feat = skip_features[-1]
-            descriptor = self.global_descriptor_head(last_encoder_feat)
-            out["global_descriptor"] = descriptor
 
         if self.conf.decoder:
             pre_features = [skip_features[-1]]

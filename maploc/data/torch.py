@@ -177,32 +177,3 @@ def contrastive_collate_fn(batch):
   
   return collated_batch
 
-
-def unvalid_collate_fn(batch):
-    """
-    Custom collate function that handles the 'positives' key.
-    It handles the custom 'positives' list and delegates the rest
-    to the project's main `collate` function, which can handle Camera objects.
-    """
-    # The default_collate function can't handle lists of tensors, so we process them manually.
-    positive_images = [d.pop('positives') for d in batch]
-
-    # Now collate the rest of the data, which is standard
-    collated_batch = collate(batch)
-
-    # Stack the anchor and positive images into a single tensor
-    anchor_images = collated_batch['image']
-    flat_positives = [p for pos_list in positive_images for p in pos_list]
-
-    # Stack the list of 3D positive tensors into a single 4D tensor
-    if flat_positives:
-        positive_images_tensor = torch.stack(flat_positives, dim=0)
-        # Now both `anchor_images` and `positive_images_tensor` are 4D. Concatenate them.
-        all_images = torch.cat([anchor_images, positive_images_tensor], dim=0)
-    else:
-        all_images = anchor_images
-
-    # The final 'image' tensor in the batch will contain all anchors followed by all positives
-    collated_batch['image'] = all_images
-
-    return collated_batch

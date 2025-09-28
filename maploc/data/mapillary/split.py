@@ -12,7 +12,7 @@ from ...osm.prepare import OSMDataSource, download_and_prepare_osm
 from ...osm.viz import GeoPlotter
 from ...utils.geo import BoundaryBox, Projection
 from ...utils.io import write_json
-from .config import default_cfg, location_to_params
+from .config_one import default_cfg, location_to_params
 from .dataset import MapillaryDataModule
 from .download import MapillaryDownloader, fetch_image_infos, fetch_image_list
 
@@ -103,7 +103,7 @@ def process_location(
         [infos[i]["computed_geometry"]["coordinates"][::-1] for i in image_ids]
     )
     xy = projection.project(latlon)
-    valid = bbox_local.contains(xy)
+    valid = (bbox_local+(-1)).contains(xy)
     image_ids = image_ids[valid]
     latlon = latlon[valid]
     xy = xy[valid]

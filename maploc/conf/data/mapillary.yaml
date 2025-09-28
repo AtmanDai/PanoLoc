@@ -1,22 +1,19 @@
 name: mapillary
 scenes:
-  - sanfrancisco_soma
-  - sanfrancisco_hayes
-  - amsterdam
+  - sanfrancisco
   - berlin
-  - lemans
-  - montrouge
-  - toulouse
-  - nantes
-  - vilnius
-  - avignon
-  - helsinki
+  - hoboken
   - milan
   - paris
-split: splits_MGL_13loc.json
+  - los_angeles
+  - brussels
+  - antwerp
+  - washington
+  - tokyo
+split: splits_MGL_10loc.json
 loading:
   train:
-    batch_size: 12
+    batch_size: 24
     num_workers: ${.batch_size}
   val:
     batch_size: ${..train.batch_size}
