@@ -441,9 +441,9 @@ class OrienterNet(BaseModel):
             "yaw_recall_5°": AngleRecall(5.0, "yaw_max"),
         }
     
-    def _angle_mid(yaw_1, yaw_2):
+    def _angle_mid(self, yaw_1, yaw_2):
         # yaw between [-180, 180]
-        diff = yaw2 - yaw_1
+        diff = yaw_2 - yaw_1
         if diff > 180:
             diff = diff - 360
         if diff < -180:
